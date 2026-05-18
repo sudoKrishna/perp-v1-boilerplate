@@ -211,6 +211,36 @@ try {
     });
 };
 });
+app.post("/onramp", (req, res) => {
+    const {userId , amount} = req.body;
+
+    if(!userId || !amount) {
+        return res.status(400).json({
+            message : "userId and amount is required"
+        })
+    }
+
+    if(amount <= 0) {
+        return res.status(400).json({
+            message : "amount is invalid"
+        })
+    }
+    const user = users.find((u) => u.userId === userId);
+
+    if(!user ) { 
+        return res.status(400).json({
+            message : "user is not found"
+        })
+    }
+
+    user.collateral.available += amount;
+
+    res.status(200).json({
+        message : "onramp is succesfull",
+        collateral : user.collateral,
+    })
+})
+
 app.delete("/order", (req, res) => { })
 app.get("/equity/available", (req, res) => { })
 app.get("/positions/open/:marketId", (req, res) => { });
