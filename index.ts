@@ -172,7 +172,45 @@ app.post("/signup", async (req, res) => {
         })
     }
 })
+app.post("/signin" , async (req , res) => {
+const {username , password} = req.body;
 
+const user = users.find((user) => user.username === username)
+
+if(!user) {
+    return res.status(400).json({
+        message : "user is not found"
+    });
+}
+
+try {
+    const isPasswordCorrect = await bcrypt.compate(
+        password,
+        user,password
+    );
+
+    if(!isPasswordCorrect) {
+        return res.status(400).json({
+            message : "password was not correct"
+        })
+    }
+
+    const token = jwt.sign(
+        {username : user.username},
+        JWT_SECRET,
+        {expiresIn : "1hr"}
+    );
+
+    res.json({
+        message : "signin successfull",
+        token : token
+    });
+} catch (error) {
+    res.status(500).json({
+        message : "internal server error"
+    });
+};
+});
 app.delete("/order", (req, res) => { })
 app.get("/equity/available", (req, res) => { })
 app.get("/positions/open/:marketId", (req, res) => { });
