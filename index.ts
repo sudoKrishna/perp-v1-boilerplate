@@ -1,92 +1,185 @@
 import express from "express";
+import { isExpressionWithTypeArguments } from "typescript";
+const bcrypt = require("bcrypt");
+const jwt = require("jsonwebtoken");
 
 const app = express();
 app.use(express.json());
 
-const users = [{
-    userId: 1,
-    username: "harkirat",
-    password: 123123,
+type PositionType = "LONG" | "SHORT";
+type MarketType = "limit" | "market";
+type StatusType = "OPEN" | "FILLED" | "CANCELLED";
+
+
+interface Position {
+    positionId: number;
+    userId: number;
+    market : string;
+    type : "LONG" | "SHORT";
+    qty : number;
+    margin : number;
+    averagePrice : number;
+    liquidationPrice : number;
+    pnl : number; 
+    status : "OPEN" | "CLOSED"
+}
+
+interface Order {
+    orderId: number;
+    market: string;
+    type: PositionType;
+    qty: number;
+    margin: number;
+    orderType: MarketType;
+    price: number;
+    status: StatusType;
+}
+
+interface User {
+    userId: number,
+    username: string,
+    password: string,
     collateral: {
-         availabe: 2000,
-         locked: 1000
+        available: number,
+        locked: number,
     },
-     positions: [
-        { market: "SOL", type: "LONG", qty: 10, margin: 500, liquidationPrice: 80, averagePrice: 90 },
-        { market: "ETH", type: "SHORT", qty: 1, margin: 500, liquidationPrice: 2000, averagePrice: 1900 }
-    ],
-    orders: [
-        { orderId: 1, market: "SOL", type: "LONG", qty: 10, margin: 500, orderType: "limit", price: 90, status: "filled" },
-        { orderId: 2, market: "ETH", type: "SHORT", qty: 10, margin: 500, orderType: "limit", price: 1900, status: "filled" },
-        { orderId: 3, market: "BTC", type: "LONG", qty: 10, margin: 500, orderType: "limit", price: 1900, status: "cancelled" },
-    ]
-}, {
-    userId: 2,
-    username: "raman",
-    password: 123123,
-    collateral: {
-         availabe: 2000,
-         locked: 2000
-    },
-    positions: [
-        { market: "SOL", type: "SHORT", qty: 10,  margin: 1000, liquidationPrice: 80, pnL: 200, averagePrice: 90 },
-        { market: "ETH", type: "LONG", qty: 1, margin: 1000, liquidationPrice: 2000, pnL: -100, averagePrice: 1900 }
-    ],
-    orders: [
-        { orderId: 10, market: "SOL", type: "SHORT", qty: 10, margin: 500, orderType: "market", price: 90, status: "filled" },
-        { orderId: 11, market: "ETH", type: "LONG", qty: 10, margin: 500, orderType: "market", price: 1900, status: "filled" },
-        { orderId: 12, market: "ZEC", type: "LONG", qty: 10, margin: 500, orderType: "limit", price: 1900, status: "open" },
-    ]
-}];
+    orders?: Order[];
+    positions : Position[];
 
-type Bid = {
-    availableQty: number,
-    openOrders: { userId: number, qty: number, filledQty: number, orderId: number, createdAt: Date }[]
 }
 
-type Orderbook = {
-    bids: Record<string, Bid>,
-    asks: Record<string, Bid>,
-    lastTradedPrice: number,
-    indexPrice: number
-}
+const users: User[] = [];
+const JWT_SECRET: string = "this"
 
-type Orderbooks = Record<string, Orderbook>
+// const users : = [{
+//     userId: 1,
+//     username: "harkirat",
+//     password: 123123,
+//     collateral: {
+//          availabe: 2000,
+//          locked: 1000
+//     },
+//      positions: [
+//         { market: "SOL", type: "LONG", qty: 10, margin: 500, liquidationPrice: 80, averagePrice: 90 },
+//         { market: "ETH", type: "SHORT", qty: 1, margin: 500, liquidationPrice: 2000, averagePrice: 1900 }
+//     ],
+//     orders: [
+//         { orderId: 1, market: "SOL", type: "LONG", qty: 10, margin: 500, orderType: "limit", price: 90, status: "filled" },
+//         { orderId: 2, market: "ETH", type: "SHORT", qty: 10, margin: 500, orderType: "limit", price: 1900, status: "filled" },
+//         { orderId: 3, market: "BTC", type: "LONG", qty: 10, margin: 500, orderType: "limit", price: 1900, status: "cancelled" },
+//     ]
+// }, {
+//     userId: 2,
+//     username: "raman",
+//     password: 123123,
+//     collateral: {
+//          availabe: 2000,
+//          locked: 2000
+//     },
+//     positions: [
+//         { market: "SOL", type: "SHORT", qty: 10,  margin: 1000, liquidationPrice: 80, pnL: 200, averagePrice: 90 },
+//         { market: "ETH", type: "LONG", qty: 1, margin: 1000, liquidationPrice: 2000, pnL: -100, averagePrice: 1900 }
+//     ],
+//     orders: [
+//         { orderId: 10, market: "SOL", type: "SHORT", qty: 10, margin: 500, orderType: "market", price: 90, status: "filled" },
+//         { orderId: 11, market: "ETH", type: "LONG", qty: 10, margin: 500, orderType: "market", price: 1900, status: "filled" },
+//         { orderId: 12, market: "ZEC", type: "LONG", qty: 10, margin: 500, orderType: "limit", price: 1900, status: "open" },
+//     ]
+// }];
 
-const orderbooks: Orderbooks = {
-     SOL: { bids: {}, asks: {}, lastTradedPrice: 90, indexPrice: 90.01 },
-     ETH: { bids: {}, asks: {}, lastTradedPrice: 1900, indexPrice: 1899.9 }
-}
+// type Bid = {
+//     availableQty: number,
+//     openOrders: { userId: number, qty: number, filledQty: number, orderId: number, createdAt: Date }[]
+// }
 
-const fills = [{
-    maker: 1,
-    taker: 2,
-    market: "SOL",
-    qty: 10,
-    price: 90,
-    long: 1,
-    short: 2
-}, {
-    maker: 1,
-    taker: 2,
-    market: "ETH",
-    qty: 1,
-    price: 1900,
-    long: 2,
-    short: 1
-}];
+// type Orderbook = {
+//     bids: Record<string, Bid>,
+//     asks: Record<string, Bid>,
+//     lastTradedPrice: number,
+//     indexPrice: number
+// }
 
-app.post("/signup", (req, res) => {})
-app.post("/signin", (req, res) => {})
-app.post("/onramp", (req, res) => {})
-app.post("/order", (req, res) => {})
-app.delete("/order", (req, res) => {})
-app.get("/equity/available", (req, res) => {})
-app.get("/positions/open/:marketId", (req, res) => {});
-app.get("/positions/closed/:marketId", (req, res) => {});
-app.get("/orders/open/:marketId", (req, res) => {})
-app.get("/orders/:marketId", (req, res) => {})
-app.get("/fills", (req, res) => {});
+// type Orderbooks = Record<string, Orderbook>
+
+// const orderbooks: Orderbooks = {
+//      SOL: { bids: {}, asks: {}, lastTradedPrice: 90, indexPrice: 90.01 },
+//      ETH: { bids: {}, asks: {}, lastTradedPrice: 1900, indexPrice: 1899.9 }
+// }
+
+// const fills = [{
+//     maker: 1,
+//     taker: 2,
+//     market: "SOL",
+//     qty: 10,
+//     price: 90,
+//     long: 1,
+//     short: 2
+// }, {
+//     maker: 1,
+//     taker: 2,
+//     market: "ETH",
+//     qty: 1,
+//     price: 1900,
+//     long: 2,
+//     short: 1
+// }];
+
+app.post("/signup", async (req, res) => {
+    const { username, password } = req.body;
+
+    //valididate karna hai
+
+    if (!username || !password) {
+        return res.status(400).json({
+            message: "user name and password is required"
+        });
+    }
+    // checking the existing user
+
+    const existingUser = users.find((user) => user.username === username);
+
+    if (existingUser) {
+        return res.status(401).json({
+            message: "User already exists"
+        });
+    }
+
+    try {
+        // hash
+
+        const hashPassword = await bcrypt.hash(password, 10);
+
+        users.push({
+            userId: Date.now(),
+            username,
+            password: hashPassword,
+            collateral: {
+                available: 0,
+                locked: 0,
+            },
+            orders: [],
+            positions : []
+
+        });
+
+        res.status(201).json({
+            message: "signup successful"
+        });
+
+    } catch (error) {
+        res.status(500).json({
+            message: "internal error"
+        })
+    }
+})
+
+app.delete("/order", (req, res) => { })
+app.get("/equity/available", (req, res) => { })
+app.get("/positions/open/:marketId", (req, res) => { });
+app.get("/positions/closed/:marketId", (req, res) => { });
+app.get("/orders/open/:marketId", (req, res) => { })
+app.get("/orders/:marketId", (req, res) => { })
+app.get("/fills", (req, res) => { });
 
 async function liqudationChecks(asset: string, price: number) {
 
@@ -94,5 +187,5 @@ async function liqudationChecks(asset: string, price: number) {
 
 
 async function onPriceUpdateFromBinance(asset: string, price: number) {
-    liqudationChecks(asset, price);   
+    liqudationChecks(asset, price);
 }
