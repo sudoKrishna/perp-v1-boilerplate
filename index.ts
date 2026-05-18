@@ -240,6 +240,93 @@ app.post("/onramp", (req, res) => {
         collateral : user.collateral,
     })
 })
+app.post("/order" ,(req , res) => {
+    const order = req.body;
+    const {userId} = req.body;
+
+    if(!userId) {
+        return res.status(400).json({message : "userId is requires"})
+    }
+
+    function isValidOrder(order : any): boolean {
+        const validType = order.type === "LONG" || order.type === "SHORT";
+        const validOrderType = order.orderType === "limit" || order.orderType === "market";
+        return (
+            order.orderId !== undefined &&
+            order.market !== undefined &&
+            order.type !== undefined &&
+            order.qty !== undefined &&
+            order.marge !== undefined &&
+            order.orderType !== undefined &&
+            order.price !== undefined &&
+            order.price >= 0 &&
+            order.status !== undefined &&
+            order.qty > 0 &&
+            order.margin > 0 &&
+            validType &&
+            validOrderType
+        );
+    }
+    if(!isValidOrder(order)) {
+        return res.status(400).json({
+            message : "missing the required fields"
+        })
+    }
+
+    const user = users.find((u) => u.userId === userId);
+
+    if(!user) {
+        return res.status(400).json({
+            message : "user in not found"
+        })
+    }
+
+    if(user.collateral.available < order.margin) {
+        return res.status(400).json({
+            message : "insufficient collateral"
+        })
+    }
+
+    user.collateral.available -= order.margin;
+    user.collateral.available += order.margin;
+    
+    if(!user.positions) {
+        user.orders = []
+    }
+
+    const newOrder : Order = {
+        orderId : Date.now(),
+        market : order.market,
+        type : order.type,
+        qty  : order.qty,
+        margin : order.margin,
+        orderType : order.orderType,
+        price : order.price,
+        status : "OPEN"
+    }
+
+    const newPosition : Position = {
+        positionId : Date.now() + 1,
+        userId : user.userId,
+        market : order.market,
+        type : order.type,
+        qty : order.qty,
+        margin : order.margin,
+        averagePrice : order.price,
+        liquidationPrice : order.price * 0.5,
+        pnl : 0,
+        status : "OPEN"
+    } 
+
+    user.orders?.push(newOrder);
+    user.positions.push(newPosition);
+    res.json({
+        message : "order is valid",
+        order : order, 
+        position : newPosition,
+        collateral : user.collateral,
+    });
+});
 
 app.delete("/order", (req, res) => { })
 app.get("/equity/available", (req, res) => { })
