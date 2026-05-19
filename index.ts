@@ -10,6 +10,15 @@ type PositionType = "LONG" | "SHORT";
 type MarketType = "limit" | "market";
 type StatusType = "OPEN" | "FILLED" | "CANCELLED";
 
+interface Fill {
+    fillId: number;
+    orderId: number;
+    market: string;
+    type: PositionType;
+    qty: number;
+    price: number;
+    timestamp: string;
+}
 
 interface Position {
     positionId: number;
@@ -45,6 +54,7 @@ interface User {
     },
     orders?: Order[];
     positions : Position[];
+    fills? : Fill[];
 
 }
 
@@ -328,13 +338,57 @@ app.post("/order" ,(req , res) => {
     });
 });
 
-app.delete("/order", (req, res) => { })
-app.get("/equity/available", (req, res) => { })
-app.get("/positions/open/:marketId", (req, res) => { });
-app.get("/positions/closed/:marketId", (req, res) => { });
-app.get("/orders/open/:marketId", (req, res) => { })
-app.get("/orders/:marketId", (req, res) => { })
-app.get("/fills", (req, res) => { });
+app.delete("/order", (req, res) => {
+   const {userId , orderId } = req.body;
+
+   if(!userId || !orderId) {
+    return res.status(400).json({
+        message : "userId or orderId are required"
+    });
+   }
+
+   const user = users.find((u) => u.userId === userId)
+
+   if(!user) {
+    return res.json({
+        message : "user not found"
+    })
+   }
+
+   if(!user.orders) {
+    return res.status(400).json({
+        message : "no order found"
+    })
+   }
+
+   const order = user.orders.find((o) => o.orderId === orderId);
+
+   if(!order) {
+    return res.status(404).json({
+        message : "order not found"
+    })
+   }
+
+   if(order.status !== "OPEN") {
+     return res.status(400).json({
+        message : "order cannot be cancelled"
+     })
+   }
+
+   user.collateral.available += order.margin;
+   user.collateral.locked -= order.margin;
+
+   order.status = "CANCELLED";
+
+   return res.status(200).json({
+     message :  "order cancelled succesfully",
+     order,
+     collateral : user.collateral
+   });
+
+ });
+
+
 
 async function liqudationChecks(asset: string, price: number) {
 
