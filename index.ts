@@ -1,7 +1,6 @@
 import express from "express";
-import { isExpressionWithTypeArguments } from "typescript";
-const bcrypt = require("bcrypt");
-const jwt = require("jsonwebtoken");
+import bcrypt from "bcrypt";
+import jwt from "jsonwebtoken";
 
 const app = express();
 app.use(express.json());
@@ -21,16 +20,16 @@ interface Fill {
 }
 
 interface Position {
-    positionId: number;
-    userId: number;
+    positionId?: number;
+    userId?: number;
     market : string;
     type : "LONG" | "SHORT";
     qty : number;
     margin : number;
     averagePrice : number;
     liquidationPrice : number;
-    pnl : number; 
-    status : "OPEN" | "CLOSED"
+    pnl? : number; 
+    status? : "OPEN" | "CLOSED"
 }
 
 interface Order {
@@ -47,7 +46,7 @@ interface Order {
 interface User {
     userId: number,
     username: string,
-    password: string,
+    password: string | number,
     collateral: {
         available: number,
         locked: number,
@@ -58,81 +57,81 @@ interface User {
 
 }
 
-const users: User[] = [];
+// const users: User[] = [];
 const JWT_SECRET: string = "this"
 
-// const users : = [{
-//     userId: 1,
-//     username: "harkirat",
-//     password: 123123,
-//     collateral: {
-//          availabe: 2000,
-//          locked: 1000
-//     },
-//      positions: [
-//         { market: "SOL", type: "LONG", qty: 10, margin: 500, liquidationPrice: 80, averagePrice: 90 },
-//         { market: "ETH", type: "SHORT", qty: 1, margin: 500, liquidationPrice: 2000, averagePrice: 1900 }
-//     ],
-//     orders: [
-//         { orderId: 1, market: "SOL", type: "LONG", qty: 10, margin: 500, orderType: "limit", price: 90, status: "filled" },
-//         { orderId: 2, market: "ETH", type: "SHORT", qty: 10, margin: 500, orderType: "limit", price: 1900, status: "filled" },
-//         { orderId: 3, market: "BTC", type: "LONG", qty: 10, margin: 500, orderType: "limit", price: 1900, status: "cancelled" },
-//     ]
-// }, {
-//     userId: 2,
-//     username: "raman",
-//     password: 123123,
-//     collateral: {
-//          availabe: 2000,
-//          locked: 2000
-//     },
-//     positions: [
-//         { market: "SOL", type: "SHORT", qty: 10,  margin: 1000, liquidationPrice: 80, pnL: 200, averagePrice: 90 },
-//         { market: "ETH", type: "LONG", qty: 1, margin: 1000, liquidationPrice: 2000, pnL: -100, averagePrice: 1900 }
-//     ],
-//     orders: [
-//         { orderId: 10, market: "SOL", type: "SHORT", qty: 10, margin: 500, orderType: "market", price: 90, status: "filled" },
-//         { orderId: 11, market: "ETH", type: "LONG", qty: 10, margin: 500, orderType: "market", price: 1900, status: "filled" },
-//         { orderId: 12, market: "ZEC", type: "LONG", qty: 10, margin: 500, orderType: "limit", price: 1900, status: "open" },
-//     ]
-// }];
+const users : User[] = [{
+    userId: 1,
+    username: "harkirat",
+    password: 123123,
+    collateral: {
+         available: 2000,
+         locked: 1000
+    },
+     positions: [
+        { market: "SOL", type: "LONG", qty: 10, margin: 500, liquidationPrice: 80, averagePrice: 90 , pnl : 0, status: "OPEN" },
+        { market: "ETH", type: "SHORT", qty: 1, margin: 500, liquidationPrice: 2000, averagePrice: 1900, pnl : 0, status: "OPEN" }
+    ],
+    orders: [
+        { orderId: 1, market: "SOL", type: "LONG", qty: 10, margin: 500, orderType: "limit", price: 90, status: "FILLED" },
+        { orderId: 2, market: "ETH", type: "SHORT", qty: 10, margin: 500, orderType: "limit", price: 1900, status: "FILLED" },
+        { orderId: 3, market: "BTC", type: "LONG", qty: 10, margin: 500, orderType: "limit", price: 1900, status: "CANCELLED" },
+    ]
+}, {
+    userId: 2,
+    username: "raman",
+    password: 123123,
+    collateral: {
+         available: 2000,
+         locked: 2000
+    },
+    positions: [
+        { market: "SOL", type: "SHORT", qty: 10,  margin: 1000, liquidationPrice: 80, pnl: 200, averagePrice: 90 },
+        { market: "ETH", type: "LONG", qty: 1, margin: 1000, liquidationPrice: 2000, pnl: -100, averagePrice: 1900 }
+    ],
+    orders: [
+        { orderId: 10, market: "SOL", type: "SHORT", qty: 10, margin: 500, orderType: "market", price: 90, status: "FILLED" },
+        { orderId: 11, market: "ETH", type: "LONG", qty: 10, margin: 500, orderType: "market", price: 1900, status: "FILLED" },
+        { orderId: 12, market: "ZEC", type: "LONG", qty: 10, margin: 500, orderType: "limit", price: 1900, status: "OPEN" },
+    ]
+}];
 
-// type Bid = {
-//     availableQty: number,
-//     openOrders: { userId: number, qty: number, filledQty: number, orderId: number, createdAt: Date }[]
-// }
+type Bid = {
+    availableQty: number,
+    openOrders: { userId: number, qty: number, filledQty: number, orderId: number, createdAt: Date }[]
+}
 
-// type Orderbook = {
-//     bids: Record<string, Bid>,
-//     asks: Record<string, Bid>,
-//     lastTradedPrice: number,
-//     indexPrice: number
-// }
+type Orderbook = {
+    bids: Record<string, Bid>,
+    asks: Record<string, Bid>,
+    lastTradedPrice: number,
+    indexPrice: number
+}
 
-// type Orderbooks = Record<string, Orderbook>
+type Orderbooks = Record<string, Orderbook>
 
-// const orderbooks: Orderbooks = {
-//      SOL: { bids: {}, asks: {}, lastTradedPrice: 90, indexPrice: 90.01 },
-//      ETH: { bids: {}, asks: {}, lastTradedPrice: 1900, indexPrice: 1899.9 }
-// }
+const orderbooks: Orderbooks = {
+     SOL: { bids: {}, asks: {}, lastTradedPrice: 90, indexPrice: 90.01 },
+     ETH: { bids: {}, asks: {}, lastTradedPrice: 1900, indexPrice: 1899.9 }
+}
 
-// const fills = [{
-//     maker: 1,
-//     taker: 2,
-//     market: "SOL",
-//     qty: 10,
-//     price: 90,
-//     long: 1,
-//     short: 2
-// }, {
-//     maker: 1,
-//     taker: 2,
-//     market: "ETH",
-//     qty: 1,
-//     price: 1900,
-//     long: 2,
-//     short: 1
-// }];
+const fills = [{
+    maker: 1,
+    taker: 2,
+    market: "SOL",
+    qty: 10,
+    price: 90,
+    long: 1,
+    short: 2
+}, {
+    maker: 1,
+    taker: 2,
+    market: "ETH",
+    qty: 1,
+    price: 1900,
+    long: 2,
+    short: 1
+}];
 
 app.post("/signup", async (req, res) => {
     const { username, password } = req.body;
@@ -194,9 +193,9 @@ if(!user) {
 }
 
 try {
-    const isPasswordCorrect = await bcrypt.compate(
+    const isPasswordCorrect = await bcrypt.compare(
         password,
-        user,password
+        String(user.password) 
     );
 
     if(!isPasswordCorrect) {
@@ -208,8 +207,8 @@ try {
     const token = jwt.sign(
         {username : user.username},
         JWT_SECRET,
-        {expiresIn : "1hr"}
-    );
+        {expiresIn : "1h"}
+    );  
 
     res.json({
         message : "signin successfull",
@@ -267,7 +266,7 @@ app.post("/order" ,(req , res) => {
             order.type !== undefined &&
             order.qty !== undefined &&
             order.marge !== undefined &&
-            order.orderType !== undefined &&
+            order.orderType !== undefined && 
             order.price !== undefined &&
             order.price >= 0 &&
             order.status !== undefined &&
@@ -388,8 +387,158 @@ app.delete("/order", (req, res) => {
 
  });
 
+app.get("/equity/available", (req, res) => {
+const userId  = Number(req.query.userId);
 
+if(!userId) {
+    return res.status(400).json({
+        message : "userId is required"
+    })
+}
 
+const user = users.find((u) => u.userId === userId);
+
+if(!user) {
+    return res.status(400).json({message : "user not found"});
+}
+
+res.status(200).json({
+    availableEquity : user.collateral.available
+});
+});
+
+app.get("/position/open/:marketId" , (req,res) => {
+    const marketId  = (req.params.marketId);
+    const userId = Number(req.query.marketId);
+
+    if(!userId) {
+        return res.status(400).json({
+            message :  "userid not found"
+        })
+    }
+
+    const user  = users.find((u) => u.userId === userId);
+
+    if(!user) {
+        return res.status(400).json({
+            message : "user not found"
+        })
+    }
+
+    const positions = user.positions.filter(
+        (position) => position.market === marketId && position.status === "OPEN"
+    )
+
+    return res.status(200).json({
+        market : marketId,
+        positions
+    })
+})
+app.get("/positions/closed/:marketId", (req, res) => { 
+    const marketId = (req.params.marketId);
+    const userId = Number(req.query.userId);
+
+    if(!userId) {
+        return res.status(400).json({
+            message : "userid not found"
+        })
+    }
+
+    const user = users.find((u) => u.userId === userId);
+     if(!user) {
+        return res.status(400).json({
+            message : "user not found"
+        })
+     }
+
+     const positions = user.positions.filter(
+        (position) => position.market === marketId &&
+        position.status === "CLOSED"
+     )
+
+     res.status(200).json({
+        market : marketId,
+        positions
+     })
+
+});
+app.get("/orders/open/:marketId", (req, res) => { 
+    const marketId = (req.params.marketId);
+    const userId = Number(req.query.userId);
+
+    if(!userId) {
+        return res.status(400).json({
+            message : "userid not found"
+        })
+    }
+
+    const user = users.find((u) => u.userId === userId);
+
+    if(!user) {
+        return res.status(400).json({
+            message : "user is not found"
+        })
+    }
+
+    const orders  = user.orders?.filter(
+        (order) => order.market === marketId &&
+        order.status === "OPEN"
+    );
+
+    return res.status(200).json({
+        market : marketId,
+        orders
+    })
+})
+app.get("/orders/:marketId", (req, res) => { 
+    const marketId  = (req.params.marketId);
+    const userId = Number(req.query.userId);
+
+    if(!userId) {
+        return res.status(400).json({
+            message : "userid not found"
+        })
+    }
+
+    const user = users.find((u) => u.userId === userId);
+
+    if(!user) {
+        return res.status(400).json({
+            message : "user is not found"
+        })
+    }
+
+    const orders = user.orders?.filter(
+        (order) => order.market === marketId
+        
+    )
+    return res.status(200).json({
+        market : marketId,
+        orders
+    })
+})
+app.get("/fills", (req, res) => { 
+    const userId = Number(req.query.userId);
+
+    if(!userId) {
+        return res.status(400).json({
+            message : "userid not found"
+        });
+    }
+
+    const user = users.find((u) => u.userId === userId)
+
+    if(!user) {
+        return res.status(400).json({
+            message : "user not found"
+        })
+    }
+
+    return res.status(200).json({
+        fills : user.fills || []
+    })
+
+});
 async function liqudationChecks(asset: string, price: number) {
 
 }
@@ -398,3 +547,7 @@ async function liqudationChecks(asset: string, price: number) {
 async function onPriceUpdateFromBinance(asset: string, price: number) {
     liqudationChecks(asset, price);
 }
+
+app.listen(3000, () => {
+    console.log("Server running on port 3000");
+});
