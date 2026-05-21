@@ -1,0 +1,93 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Get a free hosted Postgres database in seconds: `npx create-db`
+
+generator client {
+  provider = "prisma-client"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum PositionType {
+  LONG
+  SHORT
+}
+
+enum MarketType {
+  limit
+  market
+}
+
+enum StatusType {
+  OPEN
+  FILLED
+  CANCELLED
+}
+
+enum PositionStatus {
+  OPEN
+  CLOSED
+}
+
+model User {
+  userId       Int        @id @default(autoincrement())
+  username     String     @unique
+  password     String
+  collateralId Int        @unique
+  collateral   Collateral @relation(fields: [collateralId], references: [id])
+  orders       Order[]
+  position     Position[]
+  fills        Fill[]
+}
+
+model Collateral {
+  id        Int   @id @default(autoincrement())
+  available Float
+  locked    Float
+  user      User?
+}
+
+model Order {
+  orderId   Int          @id @default(autoincrement())
+  market    String
+  type      PositionType
+  qty       Float
+  margin    Float
+  orderType MarketType
+  price     Float
+  status StatusType
+  user      User         @relation(fields: [userId], references: [userId])
+  userId    Int
+  fills     Fill[]
+}
+
+model Position {
+  positionId       Int             @id @default(autoincrement())
+  market           String
+  type             PositionType
+  qty              Float
+  margin           Float
+  averagePrice     Float
+  liquidationPrice Float
+  pnl              Float?
+  status           PositionStatus?
+  user             User            @relation(fields: [userId], references: [userId])
+  userId           Int
+}
+
+model Fill {
+  filled    Int          @id @default(autoincrement())
+  orderId   Int
+  userId    Int
+  market    String
+  type      PositionType
+  qty       Float
+  price     Float
+  timestamp DateTime
+  order     Order        @relation(fields: [orderId], references: [orderId])
+  user      User         @relation(fields: [userId], references: [userId])
+}
