@@ -1,6 +1,8 @@
 import { Worker } from "bullmq";
 import {prisma}  from "../config/db";
-import { RedisConnection } from "../config/queue";
+import { redisConnection } from "../config/redis";
+import { TradeEngin } from "../services/tradeEngine";
+
 
 const orderWorker = new Worker(
     "orderQueue",
@@ -22,6 +24,10 @@ const orderWorker = new Worker(
             }
 
             const collateral = user.collateral;
+
+             if (collateral.available < order.margin) {
+              throw new Error("Insufficient collateral");
+              }
 
             await tx.collateral.update({
                 where : {id: collateral.id,},
@@ -61,7 +67,8 @@ const orderWorker = new Worker(
         console.log("order succesfull");
     },
     {
-        connection : RedisConnection,
+        connection : redisConnection,
+        concurrency : 50,
     }
 );
 
