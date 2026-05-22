@@ -1,12 +1,6 @@
-import { Queue } from 'bullmq';
-import IORedis from 'ioredis';
+import { Queue } from "bullmq";
+import { redisConnection } from "../config/redis";
 
-const connection = new IORedis({
-    host : '127.0.0.1',
-    port : 6379,
+export const orderQueue = new Queue("order-queue", {
+  connection: redisConnection,
 });
-
-export const orderQueue = new Queue('orderQueue', {
-    connection,
-})
-
