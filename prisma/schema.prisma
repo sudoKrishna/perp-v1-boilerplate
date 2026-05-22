@@ -17,15 +17,22 @@ enum PositionType {
   SHORT
 }
 
-enum MarketType {
-  limit
-  market
+enum Side {
+  BUY
+  SELL
 }
 
-enum StatusType {
+enum OrderType {
+  LIMIT
+  MARKET
+}
+
+enum OrderStatus {
   OPEN
+  PARTIALLY_FILLED
   FILLED
   CANCELLED
+  REJECTED
 }
 
 enum PositionStatus {
@@ -34,60 +41,72 @@ enum PositionStatus {
 }
 
 model User {
-  userId       Int        @id @default(autoincrement())
-  username     String     @unique
+  userId       Int         @id @default(autoincrement())
+  username     String      @unique
   password     String
-  collateralId Int        @unique
-  collateral   Collateral @relation(fields: [collateralId], references: [id])
+  collateral   Collateral?
   orders       Order[]
   position     Position[]
   fills        Fill[]
+  createdAt    DateTime    @default(now())
 }
 
 model Collateral {
   id        Int   @id @default(autoincrement())
   available Float
   locked    Float
-  user      User?
+  userId    Int   @unique
+  user      User  @relation(fields: [userId], references: [userId])
 }
 
 model Order {
-  orderId   Int          @id @default(autoincrement())
+  orderId Int  @id @default(autoincrement())
+  userId  Int
+  user    User @relation(fields: [userId], references: [userId])
   market    String
+  side      Side
   type      PositionType
+  orderType OrderType
   qty       Float
-  margin    Float
-  orderType MarketType
   price     Float
-  status StatusType
-  user      User         @relation(fields: [userId], references: [userId])
-  userId    Int
+  margin Float
+  status OrderStatus @default(OPEN)
   fills     Fill[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 model Position {
-  positionId       Int             @id @default(autoincrement())
-  market           String
-  type             PositionType
-  qty              Float
-  margin           Float
+  positionId Int  @id @default(autoincrement())
+  userId     Int
+  user       User @relation(fields: [userId], references: [userId])
+
+  market     String
+  type       PositionType
+  qty        Float
+  margin     Float
+  entryPrice Float
+
   averagePrice     Float
   liquidationPrice Float
-  pnl              Float?
-  status           PositionStatus?
-  user             User            @relation(fields: [userId], references: [userId])
-  userId           Int
+  pnl              Float?         @default(0)
+  status           PositionStatus @default(OPEN)
+  createdAt        DateTime       @default(now())
+  updateAt         DateTime       @updatedAt
 }
 
 model Fill {
-  filled    Int          @id @default(autoincrement())
-  orderId   Int
-  userId    Int
-  market    String
-  type      PositionType
+  id      Int   @id @default(autoincrement())
+  orderId Int
+  order   Order @relation(fields: [orderId], references: [orderId])
+
+  userId      Int
+  user        User   @relation(fields: [userId], references: [userId])
+  market      String
+  buyOrderId  Int?
+  sellOrderId Int?
+
   qty       Float
   price     Float
-  timestamp DateTime
-  order     Order        @relation(fields: [orderId], references: [orderId])
-  user      User         @relation(fields: [userId], references: [userId])
+  createdAt DateTime @default(now())
 }
