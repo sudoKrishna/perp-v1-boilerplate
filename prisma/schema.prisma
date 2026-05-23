@@ -41,14 +41,14 @@ enum PositionStatus {
 }
 
 model User {
-  userId       Int         @id @default(autoincrement())
-  username     String      @unique
-  password     String
-  collateral   Collateral?
-  orders       Order[]
-  position     Position[]
-  fills        Fill[]
-  createdAt    DateTime    @default(now())
+  userId     Int         @id @default(autoincrement())
+  username   String      @unique
+  password   String
+  collateral Collateral?
+  orders     Order[]
+  position   Position[]
+  fills      Fill[]
+  createdAt  DateTime    @default(now())
 }
 
 model Collateral {
@@ -60,20 +60,20 @@ model Collateral {
 }
 
 model Order {
-  orderId Int  @id @default(autoincrement())
-  userId  Int
-  user    User @relation(fields: [userId], references: [userId])
+  orderId   Int         @id @default(autoincrement())
+  userId    Int
+  user      User        @relation(fields: [userId], references: [userId])
   market    String
   side      Side
-  type      PositionType
   orderType OrderType
   qty       Float
   price     Float
-  margin Float
-  status OrderStatus @default(OPEN)
+  margin    Float
+  leverage  Float
+  status    OrderStatus @default(OPEN)
   fills     Fill[]
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @updatedAt
 }
 
 model Position {
@@ -86,13 +86,16 @@ model Position {
   qty        Float
   margin     Float
   entryPrice Float
+  leverage   Float
 
   averagePrice     Float
   liquidationPrice Float
-  pnl              Float?         @default(0)
-  status           PositionStatus @default(OPEN)
-  createdAt        DateTime       @default(now())
-  updateAt         DateTime       @updatedAt
+  realizedPnl      Float @default(0)
+
+  unrealizedPnl Float          @default(0)
+  status        PositionStatus @default(OPEN)
+  createdAt     DateTime       @default(now())
+  updateAt      DateTime       @updatedAt
 }
 
 model Fill {
@@ -105,6 +108,7 @@ model Fill {
   market      String
   buyOrderId  Int?
   sellOrderId Int?
+  side Side
 
   qty       Float
   price     Float
