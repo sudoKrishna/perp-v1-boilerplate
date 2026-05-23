@@ -1,6 +1,6 @@
 import {prisma} from "../config/db";
 
-export class PositionService {
+export class PositionServiceo {
     async applyFill (
      userId :  number,
      market : string,
