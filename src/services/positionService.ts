@@ -37,5 +37,41 @@ export class positionService {
                 },
             });
         }
+
+        const sameSide = (position.type === "LONG" && side === "BUY") ||
+        (position.type === "SHORT" && side === "SELL")
+
+        if(sameSide) {
+            const newQty = position.qty + qty;
+
+            const avg = (position.averagePrice * position.qty + price*qty) / newQty;
+
+            return prisma.position.update({
+                where : {
+                    positionId : position.positionId
+                },
+            data : {
+                qty : newQty,
+                averagePrice : avg,
+                entryPrice : avg,
+            },
+            });
+        }
+
+        const closeQty = Math.min(
+            position.qty,
+            qty
+        );
+
+        let  pnl = 0;
+
+        if(position.type === "LONG") {
+            pnl = (price - position.averagePrice) * closeQty;
+        } else {
+            pnl = (position.averagePrice - price) * closeQty;
+        }
+
+        const remainig = position.qty - closeQty;
+
     }
 }
