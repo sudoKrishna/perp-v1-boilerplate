@@ -71,7 +71,22 @@ export class positionService {
             pnl = (position.averagePrice - price) * closeQty;
         }
 
-        const remainig = position.qty - closeQty;
+        const remaining = position.qty - closeQty;
 
+        if(remaining === 0) {
+            return prisma.position.update({
+                where : {
+                    positionId : position.positionId,
+                },
+                data : {
+                    qty : 0,
+                    status : "CLOSED",
+                    pnl : position.realizedPnl + pnl,
+                },
+            });
+        }
+        
     }
+
+
 }
