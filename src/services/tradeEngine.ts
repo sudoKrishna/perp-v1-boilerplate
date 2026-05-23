@@ -5,6 +5,7 @@ type Order = {
     id: string;
     userId: number;
     price?: number;
+    market  : string;
     qty: number;
     side: Side;
     type: OrderType;
@@ -19,6 +20,8 @@ type OrderBook = {
 type Trade = {
     buyOrderId: string;
     sellOrderId: string;
+    buyerUserId: number;
+    sellerUserId: number;
     price: number;
     qty: number;
 };
@@ -41,6 +44,8 @@ export class TradeEngin {
             trades.push({
                 buyOrderId: order.id,
                 sellOrderId: bestAsk.id,
+                 buyerUserId: order.userId,
+                 sellerUserId: bestAsk.userId,
                 price: bestAsk.price!,
                 qty: tradedQty,
             });
@@ -61,6 +66,8 @@ export class TradeEngin {
             trades.push({
                 buyOrderId: bestBid.id,
                 sellOrderId: order.id,
+                buyerUserId: order.userId,
+                sellerUserId: bestBid.userId,
                 price: bestBid.price!,
                 qty: tradedQty,
             });
@@ -118,6 +125,8 @@ export class TradeEngin {
             trades.push({
                 buyOrderId: order.id,
                 sellOrderId: bestAsk.id,
+                buyerUserId: order.userId,
+                sellerUserId: bestAsk.userId,
                 price: tradePrice,
                 qty: tradedQty,
             });
@@ -146,7 +155,9 @@ export class TradeEngin {
             trades.push({
                 buyOrderId: bestBid.id,
                 sellOrderId: order.id,
-                price: tradePrice,
+                buyerUserId: bestBid.userId,
+                sellerUserId: order.userId,
+                price: bestBid.price!,
                 qty: tradedQty,
             });
             order.qty -= tradedQty;

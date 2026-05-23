@@ -1,6 +1,6 @@
 import {prisma} from "../config/db";
 
-export class positionService {
+export class PositionService {
     async applyFill (
      userId :  number,
      market : string,
@@ -32,7 +32,8 @@ export class positionService {
                     type === "LONG"
                      ?  price * 0.5
                      : price * 1.5,
-                     pnl : 0,
+                    realizedPnl: 0,
+                    unrealizedPnl: 0,
                      status : "OPEN"
                 },
             });
@@ -81,7 +82,7 @@ export class positionService {
                 data : {
                     qty : 0,
                     status : "CLOSED",
-                    pnl : position.realizedPnl + pnl,
+                    realizedPnl : position.realizedPnl + pnl,
                 },
             });
         }
@@ -92,7 +93,7 @@ export class positionService {
             },
             data : {
                 qty : remaining,
-                pnl : position.realizedPnl + pnl,
+                realizedPnl: position.realizedPnl + pnl,
             }
         })
         
