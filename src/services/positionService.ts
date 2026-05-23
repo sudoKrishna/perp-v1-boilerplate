@@ -85,6 +85,16 @@ export class positionService {
                 },
             });
         }
+
+        return prisma.position.update({
+            where : {
+                positionId : position.positionId,
+            },
+            data : {
+                qty : remaining,
+                pnl : position.realizedPnl + pnl,
+            }
+        })
         
     }
 
